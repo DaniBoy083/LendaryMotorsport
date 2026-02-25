@@ -15,7 +15,7 @@ export function HomePage() {
             <h1 className="font-bold text-center mt-6 text-2xl mb-4">
                 Carros novos e seminovos disponiveis!
             </h1>
-            <main className="gird grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <main className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                 <section className="w-full bg-red-700 rounded-lg">
                     <img
                         className="w-full rounded-lg mb-2 max-h-72 hover:scale-105 transition-all"

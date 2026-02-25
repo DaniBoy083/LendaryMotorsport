@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useContext } from "react";
 import logoImg from "../../assets/logo.svg";
 import { Conteiner } from "../../components/conteiner";
 import { Link, useNavigate } from "react-router-dom";
@@ -8,6 +8,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { auth } from "../../services/firebaseConnect";
 import {createUserWithEmailAndPassword, updateProfile, signOut} from "firebase/auth"
+import { authContext } from "../../contexts/authContext";
 
 //Define as regras de validação do formulario usando o zod.
 const schema = z.object({
@@ -21,6 +22,7 @@ type FormData = z.infer<typeof schema>
 
 export function RegisterPage() {
     const navigate = useNavigate();
+    const { handleInfoUser } = useContext(authContext);
     // cria as funções de registro e envio e os erros de validação.
     const { register, handleSubmit, formState: { errors }} = useForm<FormData>({ //Ativa a tipagem automatica dos campos.
         resolver: zodResolver(schema), //conecta o react hook com o zod.
@@ -41,6 +43,11 @@ export function RegisterPage() {
             await updateProfile(user.user, {
                 displayName: data.name
             })
+            handleInfoUser({
+                uid: user.user.uid,
+                name: data.name,
+                email: data.email
+            });
             console.log("Cadastrado com sucesso!")
             navigate("/dashboard", { replace: true }) //Navega o usuario para o dashboard e limpa o historico de navegação.
         })

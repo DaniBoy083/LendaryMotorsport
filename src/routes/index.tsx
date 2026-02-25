@@ -12,6 +12,7 @@ import { RegisterPage } from "../pages/register";
 import { DetailPage } from "../pages/detail";
 import { DashboardPage } from "../pages/dashboard";
 import { NewCarPage } from "../pages/dashboard/new";
+import { Private } from "./Private";
 
 // Criação do roteador com as rotas da aplicação
 const router = createBrowserRouter([
@@ -29,11 +30,11 @@ const router = createBrowserRouter([
             },
             {
                 path: "/dashboard",
-                element: <DashboardPage/>
+                element: <Private><DashboardPage/></Private>
             },
             {
                 path: "/dashboard/newcar",
-                element: <NewCarPage/>
+                element: <Private><NewCarPage/></Private>
             },
             {
                 // Rota coringa para página 404 (qualquer rota não definida)
