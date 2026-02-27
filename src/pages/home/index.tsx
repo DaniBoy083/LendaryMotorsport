@@ -1,6 +1,54 @@
 import { Conteiner } from "../../components/conteiner";
+import { useState, useEffect } from "react";
+import { collection, query, getDocs, orderBy } from "firebase/firestore";
+import { db } from "../../services/firebaseConnect";
+import { Link } from "react-router-dom";
+
+interface CarProps {
+    id: string;
+    name: string;
+    year: string;
+    uid: string;
+    price: string | number;
+    km: string;
+    city: string;
+    images: CarImageProps[];
+}
+
+interface CarImageProps {
+    name: string;
+    uid: string;
+    url: string;
+}
 
 export function HomePage() {
+    const [cars, setCars] = useState<CarProps[]>([]);
+    useEffect(() => {
+        function loadCars() {
+            const carsRef = collection(db, "cars");
+            const queryRef = query(carsRef, orderBy("created", "desc"));
+            getDocs(queryRef)
+            .then((snapshot) => {
+                console.log(snapshot.docs);
+                let listcars = [] as CarProps[];
+                snapshot.forEach((doc) => {
+                    listcars.push({
+                        id: doc.id,
+                        name: doc.data().name,
+                        year: doc.data().year,
+                        km: doc.data().km,
+                        city: doc.data().city,
+                        price: doc.data().price,
+                        images: doc.data().images,
+                        uid: doc.data().uid,
+                    });
+                });
+                console.log(listcars);
+                setCars(listcars);
+            })
+        }
+        loadCars();
+    }, []);
     return (
         <Conteiner>
             <section className="bg-red-700 p-4 rounded-lg w-full max-w-3xl mx-auto flex justify-center items-center gap-2">
@@ -16,24 +64,28 @@ export function HomePage() {
                 Carros novos e seminovos disponiveis!
             </h1>
             <main className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <section className="w-full bg-red-700 rounded-lg">
-                    <img
-                        className="w-full rounded-lg mb-2 max-h-72 hover:scale-105 transition-all"
-                        src="https://image.webmotors.com.br/_fotos/anunciousados/gigante/2026/202601/20260121/peugeot-208-1-0-turbo-200-hybrid-gt-cvt-wmimagem16504015832.webp?s=fill&w=552&h=414&q=60"
-                        alt="Carro"
-                    />
-                    <p className="font-bold mt-1 mb-2 px-2 text-white">Peugeot 208 GT</p>
-                    <div className="flex flex-col px-2">
-                        <span className="text-white mb-8">Ano: 2025/2026 | 10.000KM</span>
-                        <strong className="font-medium text-white text-xl">R$ 100.000</strong>
-                    </div>
-                    <div className="w-full h-px bg-slate-200 my-2"></div>
-                    <div className="px-2 pb-2">
-                        <span className="text-white">
-                            João Pessoa - PB
-                        </span>
-                    </div>
-                </section>
+                {cars.map((car) => (
+                    <Link to={`/details/${car.id}`} key={car.id}>
+                        <section key={car.id} className="w-full bg-red-700 rounded-lg">
+                            <img
+                                className="w-full rounded-lg mb-2 max-h-72 hover:scale-105 transition-all"
+                                src={car.images[0].url}
+                                alt="Carro"
+                            />
+                            <p className="font-bold mt-1 mb-2 px-2 text-white">{car.name}</p>
+                            <div className="flex flex-col px-2">
+                                <span className="text-white mb-8">Ano: {car.year} | {car.km}KM</span>
+                                <strong className="font-medium text-white text-xl">R$ {car.price}</strong>
+                            </div>
+                            <div className="w-full h-px bg-slate-200 my-2"></div>
+                            <div className="px-2 pb-2">
+                                <span className="text-white">
+                                    {car.city}
+                                </span>
+                            </div>
+                        </section>
+                    </Link>
+                ))}
             </main>
         </Conteiner>
     );

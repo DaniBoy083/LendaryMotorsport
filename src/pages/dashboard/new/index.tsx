@@ -1,6 +1,6 @@
 import { Conteiner } from "../../../components/conteiner";
 import { PainelHeader } from "../../../components/painelheader";
-import { FiUpload } from "react-icons/fi";
+import { FiUpload, FiTrash } from "react-icons/fi";
 import { useForm } from "react-hook-form";
 import { Input } from "../../../components/input";
 import { z } from "zod";
@@ -8,8 +8,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { type ChangeEvent, useState, useContext } from "react";
 import { authContext } from "../../../contexts/authContext";
 import { v4 as uuidV4 } from "uuid";
-import { storage } from "../../../services/firebaseConnect";
+import { storage, db } from "../../../services/firebaseConnect";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { addDoc, collection } from "firebase/firestore";
 
 const schema = z.object({
     name: z.string().min(1, "O nome é obrigatório"),
@@ -26,14 +27,56 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
+interface imageItemProps {
+    uid: string;
+    name: string;
+    previewUrl: string;
+    url: string;
+}
+
 export function NewCarPage() {
     const { user } = useContext(authContext);
-    const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
+    const { register, handleSubmit, formState: { errors }, reset } = useForm<FormData>({
         resolver: zodResolver(schema),
         mode: "onChange",
     });
+    const [carImages, setCarImages] = useState<imageItemProps[]>([]);
     function onSubmit(data: FormData) {
+        if(carImages.length === 0) {
+            alert("Por favor, adicione pelo menos uma imagem do carro.");
+            return;
+        }
         console.log(data);
+        const carListImages = carImages.map(car => {
+            return {
+                uid: car.uid,
+                name: car.name,
+                url: car.url,
+            }
+        })
+        addDoc(collection(db, "cars"), {
+            name: data.name,
+            model: data.model,
+            year: data.year,
+            km: data.km,
+            price: data.price,
+            city: data.city,
+            whatsapp: data.whatsapp,
+            description: data.description,
+            images: carListImages,
+            created: new Date(),
+            owner: user?.name,
+            uid: user?.uid,
+        })
+        .then(() => {
+            reset();
+            setCarImages([]);
+            alert("Carro cadastrado com sucesso!");
+        })
+        .catch((error) => {
+            console.error("Erro ao cadastrar o carro:", error);
+            alert("Ocorreu um erro ao cadastrar o carro. Por favor, tente novamente.");
+        });
     }
     async function handleFile(e: ChangeEvent<HTMLInputElement>) {
         if(e.target.files && e.target.files[0]) {
@@ -60,8 +103,26 @@ export function NewCarPage() {
         .then((snapshot) => {
             getDownloadURL(snapshot.ref).then((downloadurl) => {
                 console.log("URL da imagem:", downloadurl);
+                const imageItem = {
+                    name: uidImage,
+                    uid: currentUid,
+                    previewUrl: URL.createObjectURL(image), //Cria uma URL de visualização para a imagem usando o método createObjectURL.
+                    url: downloadurl,
+                }
+                setCarImages((prev) => [...prev, imageItem]); //Adiciona a imagem ao estado carImages para exibição posterior.
             }) //Obtém a URL de download da imagem após o upload bem-sucedido.
         })
+    }
+    async function handleDeleteImage(item: imageItemProps) {
+        console.log("Imagem deletada:", item);
+        const imagePath = `images/${item.uid}/${item.name}`; //Caminho da imagem no Firebase Storage.
+        const imageRef = ref(storage, imagePath); //Cria uma referência para a imagem no Firebase Storage.
+        try{
+            await deleteObject(imageRef); //Tenta deletar a imagem do Firebase Storage.
+            setCarImages(carImages.filter((car) => car.url !== item.url)); //Remove a imagem do estado carImages para atualizar a exibição.
+        } catch (error) {
+            console.error("Erro ao deletar a imagem:", error);
+        }
     }
     return (
         <Conteiner>
@@ -75,6 +136,18 @@ export function NewCarPage() {
                         <input onChange={handleFile} className="opacity-0 cursor-pointer" type="file" accept="image/*" />
                     </div>
                 </button>
+                {carImages.map(item => (
+                    <div key={item.name} className="w-full h-32 flex items-center justify-center relative">
+                        <button className="absolute" onClick={() => handleDeleteImage(item)}>
+                            <FiTrash size={28} color="#ffffff" />
+                        </button>
+                        <img
+                            src={item.previewUrl}
+                            className="rounded-lg w-full h-32 object-cover"
+                            alt={`Foto do carro ${item.name}`}
+                        />
+                    </div>
+                ))}
             </div>
             <div className="w-full bg-white p-3 rounded-lg flex flex-col sm:flex-row items-center gap-2 mt-2">
                 <form className="w-full" onSubmit={handleSubmit(onSubmit)}>
