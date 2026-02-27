@@ -9,12 +9,14 @@ import { Header } from '../header';
 
 export function Layout() {
     return (
-        <>
+        <div className="min-h-screen flex flex-col">
             <Header/>
             {/* Placeholder para renderizar o componente da página atual */}
-            <Outlet/>
+            <main className="flex-1">
+                <Outlet/>
+            </main>
             {/* Componente de rodapé */}
             <Footer />
-        </>
+        </div>
     );
 }
