@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Conteiner } from "../../components/conteiner";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { FaWhatsapp } from "react-icons/fa";
 import { getDoc, doc } from "firebase/firestore";
 import { db } from "../../services/firebaseConnect";
@@ -30,7 +30,8 @@ interface CarImageProps {
 
 export function DetailPage() {
     const [car, setCar] = useState<CarProps | null>(null);
-    const [sliderPreview, setSliderPreview] = useState<number>(2);
+    const [sliderPreview, setSliderPreview] = useState<number>(2); // Estado para controlar o número de slides visíveis
+    const navigate = useNavigate();
     const { id } = useParams();
     useEffect(() => {
         async function loadCar() {
@@ -41,6 +42,12 @@ export function DetailPage() {
             const carRef = doc(db, "cars", id);
             getDoc(carRef)
             .then((snapshot) => {
+                console.log("Carro carregado:", snapshot.data());
+                if (!snapshot.data()) {
+                    console.log("Carro não encontrado");
+                    navigate("/"); // Redireciona para a página inicial se o carro não for encontrado
+                    return;
+                }
                 setCar({
                     id: snapshot.id,
                     name: snapshot.data()?.name,
@@ -63,31 +70,36 @@ export function DetailPage() {
         }
         loadCar();
     }, [id]);
+    // useEffect para ajustar o número de slides visíveis com base na largura da tela
     useEffect(() => {
         function handleResize() {
-            if (window.innerWidth < 729) {
+            if (window.innerWidth < 729) { // Se a largura da tela for menor que 729px, exibe apenas 1 slide
                 setSliderPreview(1);
-            } else {
+            } else { // Caso contrário, exibe 2 slides
                 setSliderPreview(2);
             }
         }
+        // Adiciona o event listener para redimensionamento e chama a função para definir o estado inicial
         window.addEventListener("resize", handleResize); // Adiciona o event listener para redimensionamento
         handleResize();
         return () => window.removeEventListener("resize", handleResize); // Limpeza do event listener
     }, []);
     return (
         <Conteiner>
-            <Swiper
-                pagination={{ clickable: true }}
-                slidesPerView={sliderPreview}
-                navigation
-            >
-                {car?.images.map((image) => (
-                    <SwiperSlide key={image.name}>
-                        <img src={image.url} alt={image.name} className="w-full h-64 object-cover rounded-lg" />
-                    </SwiperSlide>
-                ))}
-            </Swiper>
+            {car && (
+                // Componente Swiper para exibir as imagens do carro em um slider responsivo 
+                <Swiper
+                    pagination={{ clickable: true }}
+                    slidesPerView={sliderPreview} // Usa o estado para definir o número de slides visíveis
+                    navigation
+                >
+                    {car?.images.map((image) => ( // Mapeia as imagens do carro para criar os slides do Swiper
+                        <SwiperSlide key={image.name}> {/* Cada slide exibe uma imagem do carro */}
+                            <img src={image.url} alt={image.name} className="w-full h-64 object-cover rounded-lg" />
+                        </SwiperSlide>
+                    ))}
+                </Swiper>
+            )}
             {car && (
                 <main className="w-full bg-white rounded-lg p-6 my-4">
                     <div className="flex flex-col sm:flex-row mb-4 items-center justify-between">
@@ -115,7 +127,9 @@ export function DetailPage() {
                     </div>
                     <strong className="text-lg">Descrição</strong>
                     <p className="mb-4">{car?.description}</p>
-                    <a href={`https://wa.me/${car?.whatsapp}`} target="_blank" className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-lg w-max">
+                    <strong className="text-lg">Telefone | Whatsapp</strong>
+                    <p className="mb-4">{car?.whatsapp}</p>
+                    <a href={`https://wa.me/${car?.whatsapp}?text=Olá, estou interessado no seu anuncio do ${car?.name} na plataforma LendaryMotosport!`} target="_blank" className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-lg w-max">
                         <FaWhatsapp size={20} />
                         Contatar vendedor
                     </a>

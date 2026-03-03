@@ -6,6 +6,7 @@ import { collection, query, getDocs, where, doc, deleteDoc } from "firebase/fire
 import { db, storage } from "../../services/firebaseConnect";
 import { authContext } from "../../contexts/authContext";
 import { deleteObject, ref } from "firebase/storage";
+import toast from "react-hot-toast";
 
 interface CarProps {
     id: string;
@@ -64,18 +65,24 @@ export function DashboardPage() {
         const itemCar = car;
         console.log(`Deletar carro com ID: ${car.id}`);
         const carRef = doc(db, "cars", itemCar.id);
-        await deleteDoc(carRef);
-        itemCar.images.map(async (image) => {
-            const imagePath = `images/${car.uid}/${image.name}`;
-            const imageRef = ref(storage, imagePath)
-            try {                
-                await deleteObject(imageRef);
-                setCars(cars.filter(car => car.id !== itemCar.id));
-                console.log(`Imagem ${image.name} deletada com sucesso.`);
-            } catch (error) {
-                console.error(`Erro ao deletar a imagem ${image.name}:`, error);
-            }
-        })
+        try {
+            await deleteDoc(carRef);
+
+            await Promise.all(
+                itemCar.images.map(async (image) => {
+                    const imagePath = `images/${car.uid}/${image.name}`;
+                    const imageRef = ref(storage, imagePath);
+                    await deleteObject(imageRef);
+                    console.log(`Imagem ${image.name} deletada com sucesso.`);
+                })
+            );
+
+            setCars(cars.filter(car => car.id !== itemCar.id));
+            toast.success("Carro deletado com sucesso!");
+        } catch (error) {
+            console.error("Erro ao deletar carro:", error);
+            toast.error("Ocorreu um erro ao deletar o carro. Tente novamente.");
+        }
     }
     return (
         <Conteiner>

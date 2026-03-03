@@ -1,6 +1,6 @@
 import { Conteiner } from "../../components/conteiner";
 import { useState, useEffect } from "react";
-import { collection, query, getDocs, orderBy } from "firebase/firestore";
+import { collection, query, getDocs, orderBy, where } from "firebase/firestore";
 import { db } from "../../services/firebaseConnect";
 import { Link } from "react-router-dom";
 
@@ -24,39 +24,66 @@ interface CarImageProps {
 export function HomePage() {
     const [cars, setCars] = useState<CarProps[]>([]);
     const [loading, setLoading] = useState<string[]>([]);
+    const [inputValue, setInputValue] = useState("");
     useEffect(() => {
-        function loadCars() {
-            const carsRef = collection(db, "cars");
-            const queryRef = query(carsRef, orderBy("created", "desc"));
-            getDocs(queryRef)
-            .then((snapshot) => {
-                console.log(snapshot.docs);
-                let listcars = [] as CarProps[];
-                snapshot.forEach((doc) => {
-                    listcars.push({
-                        id: doc.id,
-                        name: doc.data().name,
-                        year: doc.data().year,
-                        km: doc.data().km,
-                        city: doc.data().city,
-                        price: doc.data().price,
-                        images: doc.data().images,
-                        uid: doc.data().uid,
-                    });
-                });
-                if (listcars.length === 0) {
-                    console.log("Nenhum carro cadastrado");
-                }
-                console.log(listcars);
-                setCars(listcars);
-            })
-        }
         loadCars();
     }, []);
+    function loadCars() {
+    const carsRef = collection(db, "cars");
+    const queryRef = query(carsRef, orderBy("created", "desc"));
+    getDocs(queryRef)
+    .then((snapshot) => {
+        console.log(snapshot.docs);
+        let listcars = [] as CarProps[];
+        snapshot.forEach((doc) => {
+            listcars.push({
+                id: doc.id,
+                name: doc.data().name,
+                year: doc.data().year,
+                km: doc.data().km,
+                city: doc.data().city,
+                price: doc.data().price,
+                images: doc.data().images,
+                uid: doc.data().uid,
+            });
+        });
+        if (listcars.length === 0) {
+            console.log("Nenhum carro cadastrado");
+        }
+        console.log(listcars);
+        setCars(listcars);
+    })
+}
     // Função para lidar com o evento de carregamento da imagem
     function handleLoad(id: string) {
         console.log(`Imagem do carro ${id} carregada!`);
         setLoading((prev) => [...prev, id]);
+    }
+    // Função para lidar com a busca de carros pelo nome
+    async function handleSearchCar() {
+        if (inputValue === "") {
+            loadCars();
+            return;
+        }
+        setCars([]);
+        setLoading([]);
+        const q = query(collection(db, "cars"), where("name", ">=", inputValue.toUpperCase()) , where("name", "<=", inputValue.toUpperCase() + "\uf8ff")); // Consulta para buscar carros cujo nome começa com o valor do input
+        const querySnapshot = await getDocs(q);
+        let listcars = [] as CarProps[];
+        querySnapshot.forEach((doc) => {
+            listcars.push({
+                id: doc.id,
+                name: doc.data().name,
+                year: doc.data().year,
+                km: doc.data().km,
+                city: doc.data().city,
+                price: doc.data().price,
+                images: doc.data().images,
+                uid: doc.data().uid,
+            });
+        });
+        console.log(listcars);
+        setCars(listcars);
     }
     return (
         <Conteiner>
@@ -64,8 +91,12 @@ export function HomePage() {
                 <input
                     className="text-white w-full border-2 rounded-lg h-9 px-3 outline-none"
                     placeholder="Digite o nome do carro..."
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
                 />
-                <button className="bg-black text-white h-9 px-8 rounded-lg font-medium text-lg">
+                <button 
+                    onClick={handleSearchCar}
+                    className="bg-black text-white h-9 px-8 rounded-lg font-medium text-lg">
                     Buscar
                 </button>
             </section>
@@ -73,7 +104,7 @@ export function HomePage() {
                 Carros novos e seminovos disponiveis!
             </h1>  
             {cars.length === 0 ? (
-                <h1 className="text-center font-bold text-2xl mt-8">Nenhum carro cadastrado</h1>
+                <h1 className="text-center font-bold text-2xl mt-8">Nenhum carro encontrado</h1>
             ) : (
                 <main className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {cars.map((car) => (

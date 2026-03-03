@@ -8,6 +8,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { auth } from "../../services/firebaseConnect";
+import toast from "react-hot-toast";
 
 //Define as regras de validação do formulario usando o zod.
 const schema = z.object({
@@ -39,11 +40,13 @@ export function LoginPage() {
         .then((user) => {
             console.log("Logado com sucesso!")
             console.log(user)
+            toast.success("Login realizado com sucesso!");
             navigate("/dashboard", {replace: true})
         })
         .catch(err => {
             console.log("ERRO AO FAZER LOGIN!")
             console.log(err)
+            toast.error("Erro ao fazer login. Verifique seu email e senha.");
         })
     }
     return (

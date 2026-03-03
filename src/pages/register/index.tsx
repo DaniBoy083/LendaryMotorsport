@@ -9,6 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { auth } from "../../services/firebaseConnect";
 import {createUserWithEmailAndPassword, updateProfile, signOut} from "firebase/auth"
 import { authContext } from "../../contexts/authContext";
+import toast from "react-hot-toast";
 
 //Define as regras de validação do formulario usando o zod.
 const schema = z.object({
@@ -49,11 +50,13 @@ export function RegisterPage() {
                 email: data.email
             });
             console.log("Cadastrado com sucesso!")
+            toast.success("Cadastro realizado com sucesso!");
             navigate("/dashboard", { replace: true }) //Navega o usuario para o dashboard e limpa o historico de navegação.
         })
         .catch((error) => {
             console.log("ERRO AO CADASTRAR USUARIO!")
             console.log(error)
+            toast.error("Erro ao cadastrar usuário. Tente novamente.");
         })
     }
     return (

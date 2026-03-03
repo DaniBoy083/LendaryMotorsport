@@ -11,6 +11,7 @@ import { v4 as uuidV4 } from "uuid";
 import { storage, db } from "../../../services/firebaseConnect";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { addDoc, collection } from "firebase/firestore";
+import toast from "react-hot-toast";
 
 const schema = z.object({
     name: z.string().min(1, "O nome é obrigatório"),
@@ -43,7 +44,7 @@ export function NewCarPage() {
     const [carImages, setCarImages] = useState<imageItemProps[]>([]);
     function onSubmit(data: FormData) {
         if(carImages.length === 0) {
-            alert("Por favor, adicione pelo menos uma imagem do carro.");
+            toast.error("Por favor, adicione pelo menos uma imagem do carro.");
             return;
         }
         console.log(data);
@@ -55,12 +56,12 @@ export function NewCarPage() {
             }
         })
         addDoc(collection(db, "cars"), {
-            name: data.name,
+            name: data.name.toUpperCase(), //Converte o nome do carro para letras maiusculas antes de salvar no banco de dados. Isso é útil para padronizar os dados e facilitar a busca e comparação de nomes de carros, independentemente de como o usuário os digitou.
             model: data.model,
             year: data.year,
             km: data.km,
             price: data.price,
-            city: data.city,
+            city: data.city.toUpperCase(), //Converte o nome da cidade para letras maiusculas antes de salvar no banco de dados.
             whatsapp: data.whatsapp,
             description: data.description,
             images: carListImages,
@@ -71,11 +72,11 @@ export function NewCarPage() {
         .then(() => {
             reset();
             setCarImages([]);
-            alert("Carro cadastrado com sucesso!");
+            toast.success("Carro cadastrado com sucesso!");
         })
         .catch((error) => {
             console.error("Erro ao cadastrar o carro:", error);
-            alert("Ocorreu um erro ao cadastrar o carro. Por favor, tente novamente.");
+            toast.error("Ocorreu um erro ao cadastrar o carro. Por favor, tente novamente.");
         });
     }
     async function handleFile(e: ChangeEvent<HTMLInputElement>) {
@@ -85,7 +86,7 @@ export function NewCarPage() {
                 //Aqui você pode fazer o upload da imagem para o servidor ou armazená-la em um estado para exibição posterior.
                 await handleUpload(image);
             } else {
-                alert("Por favor, selecione uma imagem no formato JPEG ou PNG.");
+                toast.error("Por favor, selecione uma imagem no formato JPEG ou PNG.");
                 return;
             }
             console.log(image);
@@ -93,7 +94,7 @@ export function NewCarPage() {
     }
     async function handleUpload(image: File) {
         if(!user?.uid) {
-            alert("Usuário não autenticado.");
+            toast.error("Usuário não autenticado.");
             return;
         }
         const currentUid = user.uid; //Pega o id do usuario logado.
