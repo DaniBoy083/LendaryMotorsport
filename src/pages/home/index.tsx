@@ -77,7 +77,7 @@ export function HomePage() {
             ) : (
                 <main className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {cars.map((car) => (
-                        <Link to={`/details/${car.id}`} key={car.id}>
+                        <Link to={`/car/${car.id}`} key={car.id}>
                             <section key={car.id} className="w-full bg-red-700 rounded-lg">
                                 {/* Placeholder para a imagem enquanto ela carrega */}
                                 <div 

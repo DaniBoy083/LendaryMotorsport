@@ -3,8 +3,9 @@ import { PainelHeader } from "../../components/painelheader";
 import { FiTrash2 } from "react-icons/fi";
 import { useEffect, useState, useContext } from "react";
 import { collection, query, getDocs, where, doc, deleteDoc } from "firebase/firestore";
-import { db } from "../../services/firebaseConnect";
+import { db, storage } from "../../services/firebaseConnect";
 import { authContext } from "../../contexts/authContext";
+import { deleteObject, ref } from "firebase/storage";
 
 interface CarProps {
     id: string;
@@ -59,11 +60,22 @@ export function DashboardPage() {
         }
         loadCars();
     }, [user]);
-    async function handleDeleteCar(id: string) {
-        console.log(`Deletar carro com ID: ${id}`);
-        const carRef = doc(db, "cars", id);
+    async function handleDeleteCar(car: CarProps) {
+        const itemCar = car;
+        console.log(`Deletar carro com ID: ${car.id}`);
+        const carRef = doc(db, "cars", itemCar.id);
         await deleteDoc(carRef);
-        setCars(cars.filter(car => car.id !== id));
+        itemCar.images.map(async (image) => {
+            const imagePath = `images/${car.uid}/${image.name}`;
+            const imageRef = ref(storage, imagePath)
+            try {                
+                await deleteObject(imageRef);
+                setCars(cars.filter(car => car.id !== itemCar.id));
+                console.log(`Imagem ${image.name} deletada com sucesso.`);
+            } catch (error) {
+                console.error(`Erro ao deletar a imagem ${image.name}:`, error);
+            }
+        })
     }
     return (
         <Conteiner>
@@ -74,7 +86,7 @@ export function DashboardPage() {
                 <main className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {cars.map((car) => (
                         <section key={car.id} className="w-full bg-red-700 rounded-lg relative">
-                            <button onClick={() => handleDeleteCar(car.id)} className="absolute top-2 right-2 p-1 rounded-full bg-white hover:bg-gray-200 transition-colors">
+                            <button onClick={() => handleDeleteCar(car)} className="absolute top-2 right-2 p-1 rounded-full bg-white hover:bg-gray-200 transition-colors">
                                 <FiTrash2 size={26} color="#000" />
                             </button>
                             <img
